@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Three.js GLTF Importer</title>
+  <script src="https://csc-vu.github.io/lib/three.js"></script>
+  <script src="https://csc-vu.github.io/lib/OrbitControls.js"></script>
+  <script src="https://csc-vu.github.io/lib/GLTFLoader.js"></script>
+
+<!-- Adapted from code from https://discoverthreejs.com/book/first-steps/load-models/ -->
+
+  <script>
+    var scene, camera, renderer; // Three.js rendering basics
+
+    var canvas; // The canvas on which the image is rendered
+
+    var mouse;  // Used to navigate the scene with the mouse
+
+    var rocket; // Blender model
+
+    var rocketFlag = false;
+
+    var eyeLight;
+
+    // Load Blender gltf/glb models and add to scene
+    function loadModels()
+    {
+        const loader = new THREE.GLTFLoader();
+        const url = './rocket.glb';
+
+        // function to execute when model has been loaded 
+        function onLoad ( gltf ) {
+            //console.log( gltf.scene);
+            //console.log( gltf.scene.children);
+            rocket = gltf.scene;
+
+            rocket.scale.set(0.5, 0.5, 0.5);
+            scene.add(rocket);
+
+            rocketFlag = true;  // the rocket object has been loaded
+        }       
+
+        loader.load(url, onLoad);
+    }
+
+    // Create a camera, sitting on the positive z-axis.  The camera is not part of the scene
+    function createCamera() {
+        camera = new THREE.PerspectiveCamera(45, canvas.width/canvas.height, 0.1, 500);
+        camera.position.set(0,0,20);
+
+        // Add orbit control to allow the camera orbit around
+        mouse = new THREE.OrbitControls(camera, renderer.domElement);
+    }
+
+    function createScene()
+    {
+        renderer.setClearColor(0); // Set background color (0, or 0x000000, is black).
+        scene = new THREE.Scene(); // Create a new scene which we can add objects to.
+
+        // load Blender gltf/glb model
+        loadModels();
+
+        // add sky
+        var texLoader = new THREE.TextureLoader(); 
+        var skyTexture = texLoader.load("sky.jpg");
+        var skyMat = new THREE.MeshPhongMaterial( { map: skyTexture, side: THREE.DoubleSide});
+        var geom = new THREE.PlaneGeometry(100, 100); 
+        var sky = new THREE.Mesh( geom, skyMat);
+        sky.position.z = -20;
+        scene.add(sky);
+    }
+
+
+    // add lights to the scene
+    function createLights()
+    {
+        // add an ambient light
+        const ambColor = 0xFFFFFF;
+        const ambIntensity = 0.5;
+        const ambLight = new THREE.AmbientLight(ambColor, ambIntensity);
+        scene.add(ambLight);
+
+        // Step 2.1: add a directional light to shine in the direction the camera faces
+        // DirectionalLight (color, intensity)
+        eyeLight = new THREE.DirectionalLight( "white", 0.8 );   
+        eyeLight.position.set(camera.position.x,camera.position.y,camera.position.z);  // shines down the z-axis
+        scene.add(eyeLight);
+
+
+        // Step 2.2: add a dim light shining from above
+        // DirectionalLight (color, intensity)
+        var topLight = new THREE.DirectionalLight( "white", 0.8 ); 
+        topLight.position.set(0,1,0);
+        scene.add( topLight );
+    }
+
+    var angle = 0.1;
+
+    function render() {
+
+        requestAnimationFrame( render );
+
+        mouse.update();
+        eyeLight.position.set(camera.position.x,camera.position.y,camera.position.z);  // shines down the z-axis
+
+        if(rocketFlag) {
+            rocket.position.x = 8*Math.cos(angle);
+            rocket.position.z = 8*Math.sin(angle);
+            //rocket.rotation.set(0, angle, 0);
+            rocket.rotation.x = Math.PI/2;
+            rocket.rotation.z = angle;
+            angle += 0.01;
+        }
+
+        renderer.render(scene, camera);
+
+    }
+
+    function main() {
+
+        try {
+            canvas = document.getElementById("glcanvas");
+            renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true} );
+        }
+        catch (e) {
+            document.getElementById("canvas-holder").innerHTML = "<h3><b>WebGL is not available.</b><h3>";
+            return;
+        }
+
+        var launchButton = document.getElementById("launch");
+ 
+        // function to execute when user clicks the button
+        launchButton.onclick = function () { 
+            // add functionality here
+            console.log("Hello"); 
+        };
+
+       // create camera
+        createCamera();
+        
+        // create scene 
+        createScene();
+
+        // create lights 
+        createLights();
+
+        // render scene
+        render();
+    }
+  </script>
+
+</head>
+<body onload="main()">
+<div id="canvas-holder">
+    <canvas id="glcanvas" width="600" height="400"></canvas>
+    <div style="position:absolute; left:280px;top:380px">
+        <button id="launch" type="button">Launch</button>
+        <!--<button id="launch" style = "background:none; border:none" type="button">Launch</button>-->
+    </div> 
+</div>
+</body>
+</html>
+
